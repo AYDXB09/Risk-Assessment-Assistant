@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GroupGuard - Risk Assessment</title>
+    <meta name="description" content="WhatsApp group risk assessment tool for phone numbers and messages.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <i class="fa-solid fa-shield-halved"></i>
+                <h1>GroupGuard</h1>
+            </div>
+            <p class="subtitle">Risk assessment for WhatsApp group admins</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="phone">
+                <i class="fa-solid fa-phone"></i> Phone Audit
+            </button>
+            <button class="tab-btn" data-tab="message">
+                <i class="fa-solid fa-comment"></i> Message Audit
+            </button>
+        </nav>
+
+        <main>
+            <section id="phone-tab" class="tab-content active">
+                <div class="input-group">
+                    <label for="phone-input">Phone Number</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="phone-input" placeholder="+1 555 123 4567" autocomplete="off">
+                        <button id="analyze-phone-btn" class="action-btn">Analyze</button>
+                    </div>
+                </div>
+
+                <div class="results-container hidden" id="phone-results">
+                    <div class="status-badge" id="phone-risk-badge">LOW</div>
+                    <div class="result-card">
+                        <h3><i class="fa-solid fa-file-lines"></i> Report</h3>
+                        <div class="code-block-wrapper">
+                            <pre id="phone-report-text"></pre>
+                            <button class="copy-btn" data-target="phone-report-text"><i
+                                    class="fa-regular fa-copy"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="message-tab" class="tab-content">
+                <div class="input-group">
+                    <label for="message-input">Message Content</label>
+                    <textarea id="message-input" rows="6" placeholder="Paste message here..."></textarea>
+                    <button id="analyze-message-btn" class="action-btn">Scan</button>
+                </div>
+
+                <div class="results-container hidden" id="message-results">
+                    <div class="status-badge" id="message-risk-badge">SAFE</div>
+                    <div class="result-card">
+                        <h3><i class="fa-solid fa-file-lines"></i> Report</h3>
+                        <div class="code-block-wrapper">
+                            <pre id="message-report-text"></pre>
+                            <button class="copy-btn" data-target="message-report-text"><i
+                                    class="fa-regular fa-copy"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Local heuristic analysis. No data stored.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

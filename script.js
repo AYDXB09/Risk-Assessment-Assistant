@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwv73Mnjo2HeQHFVE7q-y_RxhIZkAmyyrB9o8-VlD3zuopzaSnwGlsVlljpWo6dZdgW/exec';
 
-    // --- Tabs Logic ---
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
 
@@ -45,23 +44,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.error) {
                 displayPhoneResult('ERROR', data.error);
             } else {
-                displayPhoneResult(data.riskLevel, formatPhoneReport(data));
+                displayPhoneResult(data.riskLevel, data.report);
             }
         } catch (err) {
-            displayPhoneResult('ERROR', `Failed to connect to validation service.\n\nDetails: ${err.message}`);
+            displayPhoneResult('ERROR', `Connection failed.\nDetails: ${err.message}`);
         } finally {
             analyzePhoneBtn.disabled = false;
             analyzePhoneBtn.textContent = 'Analyze';
         }
     });
-
-    function formatPhoneReport(data) {
-        return `Number validation: ${data.validation}
-Risk indicators: ${data.indicators}
-Risk level: ${data.riskLevel}
-Admin recommendation: ${data.recommendation}
-Notes on uncertainty: ${data.notes}`;
-    }
 
     function displayPhoneResult(level, report) {
         const container = document.getElementById('phone-results');
@@ -207,5 +198,3 @@ Admin action recommendation: ${action}`;
         }
     }
 });
-
-

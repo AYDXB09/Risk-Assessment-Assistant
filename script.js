@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6V70Bdin5d50vekH4IxKaez514O6wWvo0-vGsFAX8NQVYhggih4BP_uohanV6cU8m/exec';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwv73Mnjo2HeQHFVE7q-y_RxhIZkAmyyrB9o8-VlD3zuopzaSnwGlsVlljpWo6dZdgW/exec';
 
     // --- Tabs Logic ---
     const tabs = document.querySelectorAll('.tab-btn');
@@ -207,4 +207,5 @@ Admin action recommendation: ${action}`;
         }
     }
 });
+
 

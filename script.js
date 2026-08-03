@@ -218,37 +218,127 @@ document.addEventListener('DOMContentLoaded', () => {
         displayMessageResult(...analyzeMessage(text));
     });
 
+    // Leet-speak / obfuscation map used to catch disguised slurs and abuse.
+    const LEET_MAP = {
+        '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '8': 'b',
+        '$': 's', '@': 'a', '!': 'i', '|': 'i', '<': 'i'
+    };
+
+    // Offensive / hate words. Tokens are leet-normalised before matching, so
+    // variants like "sh1t", "b1tch" or "fuuuck" are still caught.
+    const SLURS = new Set([
+        // Racial / ethnic slurs
+        'nigger', 'nigga', 'niga', 'nigz', 'kike', 'spic', 'spik', 'wetback',
+        'chink', 'gook', 'beaner', 'paki', 'coon', 'gypsy', 'towelhead',
+        'sandnigger', 'porchmonkey', 'cameljockey', 'mick', 'wop', 'kraut',
+        'dago', 'halfbreed', 'tarbaby',
+        // Gender / orientation slurs
+        'fag', 'faggot', 'fagot', 'tranny', 'dyke',
+        // Ableist slurs
+        'retard', 'retarted', 'spaz', 'mongoloid',
+        // General abuse
+        'bitch', 'bastard', 'whore', 'slut', 'cunt', 'twat', 'pussy', 'asshole',
+        'douche', 'douchebag', 'dickhead', 'wanker', 'tosser', 'prick', 'bollocks',
+        'motherfucker', 'fuck', 'fucker', 'shit', 'shithead', 'jackass',
+        // Obfuscated / shortened forms
+        'fck', 'fuk', 'fk', 'fuc', 'fug', 'bch', 'btch', 'bich', 'bytch'
+    ]);
+
+    // Spaced-out or phrasal abuse (matched against space/punctuation-stripped text).
+    const HATE_PHRASES = [
+        'kys', 'killyourself', 'killurself', 'endyourself', 'godie', 'cantlive',
+        'stfu', 'gtfo', 'fyou', 'fukyou', 'fckyou'
+    ];
+
+    function maskSlur(word) {
+        if (word.length <= 2) return '*'.repeat(word.length);
+        return word[0] + '*'.repeat(word.length - 2) + word[word.length - 1];
+    }
+
+    // Returns a list of (masked) slurs found, or [].
+    function detectSlurs(text) {
+        const found = [];
+        const normalized = text.toLowerCase()
+            .split('').map(ch => LEET_MAP[ch] || ch).join('');
+        const tokens = normalized.split(/\s+/)
+            .map(t => t.replace(/[^a-z]/g, ''))
+            .filter(t => t.length >= 2);
+
+        for (const token of tokens) {
+            for (const s of SLURS) {
+                if (s.length < 4) {
+                    if (token === s) { found.push(maskSlur(s)); break; }
+                } else if (token === s || (token.length <= s.length + 3 && token.includes(s))) {
+                    found.push(maskSlur(s)); break;
+                }
+            }
+        }
+
+        const flat = normalized.replace(/[^a-z]/g, '');
+        for (const phrase of HATE_PHRASES) {
+            if (flat.includes(phrase)) found.push(maskSlur(phrase));
+        }
+
+        // Spaced-out obfuscation: "f u c k", "s h i t", "b 1 t c h"…
+        for (const s of SLURS) {
+            if (s.length >= 4) {
+                const spaced = s.split('').join(' ');
+                if (normalized.includes(spaced)) found.push(maskSlur(s));
+            }
+        }
+
+        return [...new Set(found)];
+    }
+
     function analyzeMessage(text) {
         const lower = text.toLowerCase();
 
-        // Rules: { category, pattern (regex) or keywords[], rule, severity }
+        // Rules: { category, keywords[], rule, severity }
         const keywordRules = [
             {
                 category: 'SCAM / PHISHING',
                 keywords: ['crypto', 'investment', 'bitcoin', 'usdt', 'forex', 'mining', 'binance',
-                    'double your money', 'guaranteed profit', 'passive income', 'get rich'],
+                    'double your money', 'guaranteed profit', 'passive income', 'get rich', 'crypto signals',
+                    'trading group', 'pump', 'defi', 'yield', 'smart contract', 'stablecoin', 'coinbase'],
                 rule: 'No unsolicited investment or crypto schemes.',
                 severity: 'HIGH'
             },
             {
                 category: 'SCAM / PHISHING',
                 keywords: ['otp', 'verification code', 'send me the code', 'account access',
-                    'confirm your password', 'click the link', 'verify your account', 'reset your password'],
-                rule: 'No requests for OTPs or account access.',
+                    'confirm your password', 'click the link', 'verify your account', 'reset your password',
+                    'suspicious activity', 'unusual activity', 'card blocked', 'blocked card',
+                    'verify your identity', 'confirm your details', 'validate your account',
+                    'scan this qr', 'qr code', 'security code'],
+                rule: 'No requests for OTPs, codes or account access.',
                 severity: 'HIGH'
             },
             {
                 category: 'SCAM / PHISHING',
                 keywords: ['urgent', 'hurry', 'act now', 'immediate', 'emergency', 'money transfer',
-                    'wire transfer', 'western union', 'paypal friend', 'send money'],
-                rule: 'No urgent financial requests.',
+                    'wire transfer', 'western union', 'paypal friend', 'send money', 'asap',
+                    'right away', 'pay the fee', 'activation fee', 'delivery fee', 'customs fee',
+                    'keep this secret', 'don t tell anyone', 'do not tell anyone'],
+                rule: 'No urgent financial requests or secrecy pressure.',
                 severity: 'MEDIUM'
+            },
+            {
+                category: 'SCAM / PHISHING',
+                keywords: ['cvv', 'card number', 'debit', 'credit card', 'online banking',
+                    'routing number', 'sort code', 'bank account', 'gift card code',
+                    'apple gift card', 'steam gift card', 'pay with gift card'],
+                rule: 'No requests for payment details or gift cards.',
+                severity: 'HIGH'
             },
             {
                 category: 'IMPERSONATION',
                 keywords: ['whatsapp support', 'official staff', 'admin team', 'customer service',
-                    'group moderator', 'telegram support', 'official account'],
-                rule: 'No impersonation of authority.',
+                    'group moderator', 'telegram support', 'official account', 'official team',
+                    'support team', 'help desk', 'security team', 'billing department',
+                    'your bank', 'fraud department', 'credit union', 'irs', 'tax office',
+                    'government official', 'police', 'court', 'your son', 'your daughter',
+                    'your father', 'your mother', 'your brother', 'your uncle', 'your cousin'],
+                rule: 'No impersonation of authority, institutions or relatives.',
                 severity: 'HIGH'
             },
             {
@@ -259,7 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             {
                 category: 'ADULT / ADULT SERVICES',
-                keywords: ['sex', 'nude', 'porn', 'onlyfans', 'escort', 'hookup'],
+                keywords: ['sex', 'nude', 'porn', 'onlyfans', 'escort', 'hookup', 'nsfw',
+                    'cam show', 'sexting', 'nudes'],
                 rule: 'No adult content or services.',
                 severity: 'HIGH'
             },
@@ -269,6 +360,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     'lucky winner', 'limited time offer', 'cash prize'],
                 rule: 'No unsolicited prize or giveaway content.',
                 severity: 'MEDIUM'
+            },
+            {
+                category: 'SPAM',
+                keywords: ['work from home', 'earn money', 'easy money', 'make money fast',
+                    'cash app flip', 'money flip', 'loan approved', 'free money',
+                    'instant payout', 'earning app', 'money making'],
+                rule: 'No get-rich-quick or job scams.',
+                severity: 'MEDIUM'
+            },
+            {
+                category: 'SPAM',
+                keywords: ['sugar daddy', 'sugar mommy', 'seeking arrangement', 'findom'],
+                rule: 'No romance or sugaring scams.',
+                severity: 'MEDIUM'
+            },
+            {
+                category: 'SCAM / PHISHING',
+                keywords: ['miracle cure', 'weight loss', 'herbal remedy', 'detox', 'testosterone',
+                    'hair growth', 'male enhancement'],
+                rule: 'No dubious health or supplement promotions.',
+                severity: 'MEDIUM'
+            },
+            {
+                category: 'SPAM',
+                keywords: ['kindly', 'dear sir', 'dear madam', 'this is not a scam', 'trust me',
+                    'i promise', 'please assist', 'reward for your help'],
+                rule: 'Common phishing phrasing detected.',
+                severity: 'LOW'
             }
         ];
 
@@ -282,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
             {
                 category: 'SCAM / PHISHING',
                 pattern: /\b(?:\$\s?\d{2,}(?:,\d{3})*|\d{1,3}(?:,\d{3})*\s?(?:USD|USDT|GBP|EUR))\b/,
-                rule: 'Large monetary amounts mentioned.',
+                rule: 'Monetary amounts mentioned.',
                 severity: 'MEDIUM'
             },
             {
@@ -302,6 +421,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 pattern: /\b(\d{10,})|[\s]\+\d{7,}\b/,
                 rule: 'Embedded phone number(s).',
                 severity: 'LOW'
+            },
+            {
+                category: 'SPAM',
+                pattern: /\b[A-Z]{5,}\b/,
+                rule: 'Excessive shouting (all-caps).',
+                severity: 'LOW'
             }
         ];
 
@@ -313,6 +438,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const rulesBroken = [];
 
         const SEVERITY_WEIGHT = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+
+        // Hate speech / slur scan runs first — highest priority.
+        const slurHits = detectSlurs(text);
+        if (slurHits.length > 0) {
+            hits++;
+            score += SEVERITY_WEIGHT.HIGH;
+            worstSeverity = 'HIGH';
+            detectedCategory = 'HATE SPEECH / SLURS';
+            flaggedExcerpts.push(...slurHits);
+            rulesBroken.push('Hate speech or abusive slurs are strictly prohibited.');
+        }
 
         // Word-boundary keyword check to reduce false positives.
         keywordRules.forEach(r => {
@@ -366,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
             confidence = score >= 3 ? 'HIGH' : (score >= 2 ? 'MEDIUM' : 'LOW');
             if (worstSeverity === 'HIGH') {
                 classification = detectedCategory || 'SCAM / PHISHING';
-                action = (classification === 'IMPERSONATION' || classification === 'SCAM / PHISHING') ? 'REMOVE USER' : 'DELETE';
+                action = (classification === 'HATE SPEECH / SLURS' || classification === 'IMPERSONATION' || classification === 'SCAM / PHISHING') ? 'REMOVE USER' : 'DELETE';
             } else {
                 classification = detectedCategory || 'POLICY VIOLATION';
                 action = 'WARN';
@@ -396,7 +532,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         badge.className = 'status-badge';
         if (classification === 'SAFE') badge.classList.add('badge-safe');
-        else if (classification.includes('SCAM') || classification.includes('IMPERSONATION') || classification.includes('ADULT')) {
+        else if (classification.includes('HATE') || classification.includes('SCAM') ||
+            classification.includes('IMPERSONATION') || classification.includes('ADULT')) {
             badge.classList.add('badge-high');
         } else if (classification.includes('VIOLATION') || classification.includes('SPAM')) {
             badge.classList.add('badge-medium');

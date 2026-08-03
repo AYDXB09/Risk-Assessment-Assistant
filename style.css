@@ -25,6 +25,10 @@
 
 body {
     background-color: var(--bg-primary);
+    background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(37, 99, 235, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(34, 197, 94, 0.05), transparent);
+    background-attachment: fixed;
     color: var(--text-primary);
     font-family: var(--font-main);
     min-height: 100vh;
@@ -52,6 +56,13 @@ header .logo {
 header .logo i {
     font-size: 1.5rem;
     color: var(--accent);
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(37, 99, 235, 0.06));
+    border: 1px solid rgba(37, 99, 235, 0.35);
 }
 
 header h1 {
@@ -101,6 +112,14 @@ header h1 {
 .tab-btn.active {
     background: var(--bg-card);
     color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.tab-btn:focus-visible,
+.action-btn:focus-visible,
+.copy-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 /* Content */
@@ -180,8 +199,12 @@ textarea:focus {
     font-weight: 500;
     font-size: 0.875rem;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.05s;
     white-space: nowrap;
+}
+
+.action-btn:active:not(:disabled) {
+    transform: scale(0.98);
 }
 
 .action-btn:disabled {
@@ -210,6 +233,38 @@ textarea:focus {
     border-top: 1px solid var(--border-color);
 }
 
+.result-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.source-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.source-chip.hidden {
+    display: none;
+}
+
+.field-hint {
+    margin-top: 8px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
 .status-badge {
     display: inline-block;
     padding: 6px 12px;
@@ -218,7 +273,7 @@ textarea:focus {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 16px;
+    margin-bottom: 0;
 }
 
 .badge-low {
@@ -297,16 +352,19 @@ footer {
 }
 
 /* Loading State */
-.loading .action-btn {
+.action-btn.loading {
     position: relative;
     color: transparent;
 }
 
-.loading .action-btn::after {
+.action-btn.loading::after {
     content: '';
     position: absolute;
+    left: 50%;
+    top: 50%;
     width: 16px;
     height: 16px;
+    margin: -8px 0 0 -8px;
     border: 2px solid transparent;
     border-top-color: white;
     border-radius: 50%;
